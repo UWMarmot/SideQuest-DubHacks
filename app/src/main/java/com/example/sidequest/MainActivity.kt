@@ -31,12 +31,19 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+
 
 data class NavRowComponent (
     val title: String,
     val highlighted: ImageVector,
     val normal: ImageVector,
+)
 
+data class EventPost (
+    val name: String
 )
 
 
@@ -45,90 +52,114 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+
             SideQuestTheme {
-                val items = listOf(
-                    NavRowComponent(
-                        title = "Explore",
-                        highlighted = Icons.Filled.Star,
-                        normal = Icons.Outlined.Star
-                    ),
-                    NavRowComponent(
-                        title = "Map",
-                        highlighted = Icons.Filled.LocationOn,
-                        normal = Icons.Outlined.LocationOn
-                    ),
-                    NavRowComponent(
-                        title = "Camera",
-                        highlighted = Icons.Filled.PlayArrow,
-                        normal = Icons.Outlined.PlayArrow
-                    ),
-                    NavRowComponent(
-                        title = "Events",
-                        highlighted = Icons.Filled.DateRange,
-                        normal = Icons.Outlined.DateRange
-                    ),
-                    NavRowComponent(
-                        title = "Profile",
-                        highlighted = Icons.Filled.AccountCircle,
-                        normal = Icons.Outlined.AccountCircle
-                    )
+                NavBarLoad()
 
-                )
-
-                var isSelected by rememberSaveable {
-                    mutableStateOf(0)
-                }
-
-                Scaffold(modifier = Modifier.fillMaxSize(),
-                    bottomBar = {
-                        NavigationBar {
-                            items.forEachIndexed { index, item ->
-                                NavigationBarItem(
-                                    selected = isSelected == index,
-                                    onClick = { isSelected = index },
-                                    label = {
-                                        Text(item.title)
-                                    },
-                                    //navcontroller.navigate(item.title)
-                                    icon = {
-                                        Icon(
-                                            imageVector =  item.highlighted,
-                                            contentDescription = item.title
-
-                                            )
-                                    }
-
-                                )
-                            }
-                        }
-                    }) { innerPadding ->
-
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
             }
         }
     }
 }
 
+
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+fun NavBarLoad() {
+
+    //Sets up navController to allow navigation
+    val navController = rememberNavController()
+
+
+    val items = listOf(
+        NavRowComponent(
+            title = "Explore",
+            highlighted = Icons.Filled.Star,
+            normal = Icons.Outlined.Star
+        ),
+        NavRowComponent(
+            title = "Map",
+            highlighted = Icons.Filled.LocationOn,
+            normal = Icons.Outlined.LocationOn
+        ),
+        NavRowComponent(
+            title = "Camera",
+            highlighted = Icons.Filled.PlayArrow,
+            normal = Icons.Outlined.PlayArrow
+        ),
+        NavRowComponent(
+            title = "Events",
+            highlighted = Icons.Filled.DateRange,
+            normal = Icons.Outlined.DateRange
+        ),
+        NavRowComponent(
+            title = "Profile",
+            highlighted = Icons.Filled.AccountCircle,
+            normal = Icons.Outlined.AccountCircle
+        )
+
     )
+    //Variable tracks nav button is selected
+    var isSelected by rememberSaveable {
+        mutableStateOf(0)
+    }
+
+    Scaffold(modifier = Modifier.fillMaxSize(),
+        //Creates bottom nav bar
+        bottomBar = {
+            NavigationBar {
+                items.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        selected = isSelected == index,
+                        onClick = { isSelected = index; navController.navigate(item.title) },
+                        label = {
+                            Text(item.title)
+                        },
+
+                        icon = {
+                            Icon(
+                                imageVector =  item.highlighted,
+                                contentDescription = item.title
+
+                            )
+                        }
+
+                    )
+                }
+            }
+        }) { innerPadding ->
+        //Declares NavHost, and the different accessible routes from the host
+        NavHost(
+            navController = navController,
+            startDestination = "Explore", // Define default route
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(route = "Explore") {
+                ExploreScreen()
+            }
+            composable(route = "Map") {
+                MapScreen()
+            }
+            composable(route = "Camera") {
+                CameraScreen()
+            }
+            composable(route = "Events") {
+                EventsScreen()
+            }
+            composable(route = "Profile") {
+                ProfileScreen()
+            }
+        }
+
+    }
 }
 
-/*
-@Preview(showBackground = true)
+
+@Preview
 @Composable
 fun GreetingPreview() {
     SideQuestTheme {
-        Greeting("Android")
+        NavBarLoad()
     }
 }
- */
+
 
 
