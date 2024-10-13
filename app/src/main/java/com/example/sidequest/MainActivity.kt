@@ -6,34 +6,44 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.sidequest.ui.theme.SideQuestTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.sidequest.ui.theme.SideQuestTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.database
 
 
 data class NavRowComponent (
@@ -42,19 +52,41 @@ data class NavRowComponent (
     val normal: ImageVector,
 )
 
-data class EventPost (
-    val name: String
+data class EventPost(
+    var title: String? = "",
+    var desc: String? = "",
+    var long: Double? = 0.0,
+    var lat: Double? = 0.0,
+    var date: String? = "",
+    var pop: Int? = 0,
 )
+
+public lateinit var fusedLocationClient: FusedLocationProviderClient
+val eventsList = mutableListOf<EventPost>()
+
+
+
+var firebaseDatabase: FirebaseDatabase? = null
+
+
+var databaseReference: DatabaseReference? = null
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        FirebaseApp.initializeApp(this)
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        databaseReference = firebaseDatabase?.getReference("events");
+
         setContent {
 
             SideQuestTheme {
                 NavBarLoad()
+                LoadEvents()
+                //writeAndReadFromFirebase()
 
             }
         }
@@ -150,6 +182,41 @@ fun NavBarLoad() {
         }
 
     }
+}
+
+@Composable
+fun LoadEvents() {
+
+    databaseReference?.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            println("got there")
+            if (snapshot.exists()) {
+                println(snapshot)
+                // Iterate over the children of the snapshot
+
+                for (eventSnapshot in snapshot.children) {
+                    val event = EventPost()
+                    event.desc = eventSnapshot.child("Desc").getValue(String::class.java)
+                    event.long = eventSnapshot.child("Long").getValue(String::class.java)?.toDoubleOrNull()
+                    event.title = eventSnapshot.child("Title").getValue(String::class.java)
+                    event.lat = eventSnapshot.child("Lat").getValue(String::class.java)?.toDoubleOrNull()
+                    event.pop = eventSnapshot.child("Population").getValue(Long::class.java)?.toInt()
+                    event.date = eventSnapshot.child("Date").getValue(String::class.java)
+                    eventsList.add(event)
+
+
+                    
+                }
+
+            } else {
+                println("Error getting data: No events found.")
+            }
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            println("Error reading data: ${error.message}")
+        }
+    })
 }
 
 
